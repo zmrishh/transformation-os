@@ -1,5 +1,5 @@
 import { supabase } from "./supabase"
-import type { DayEntry } from "./types"
+import type { DayEntry, WorkoutType } from "./types"
 
 // ─── Row types (mirror Supabase schema) ──────────────────────────────────────
 
@@ -59,6 +59,7 @@ export interface DailyLogRow {
   day:          number
   log_date:     string           // "YYYY-MM-DD"
   workout_done: boolean
+  workout_type: WorkoutType | null
   calories:     number | null
   protein:      number | null
   weight:       number | null
@@ -172,6 +173,7 @@ export function logsToEntries(logs: DailyLogRow[]): Record<number, DayEntry> {
     entries[log.day] = {
       day:         log.day,
       workoutDone: log.workout_done,
+      workoutType: (log.workout_type as WorkoutType | null) ?? null,
       calories:    log.calories,
       protein:     log.protein,
       weight:      log.weight,
@@ -192,6 +194,7 @@ export function entryToLog(
     day:          entry.day,
     log_date:     dayToDate(startDate, entry.day),
     workout_done: entry.workoutDone,
+    workout_type: entry.workoutType,
     calories:     entry.calories,
     protein:      entry.protein,
     weight:       entry.weight,

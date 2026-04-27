@@ -8,9 +8,10 @@ export function Nav() {
   const pathname = usePathname()
 
   const links = [
-    { href: "/", label: "Dashboard" },
-    { href: "/training", label: "Training" },
-    { href: "/vault", label: "Vault" },
+    { href: "/",         label: "Dashboard" },
+    { href: "/training", label: "Training"  },
+    { href: "/vault",    label: "Vault"     },
+    { href: "/journal",  label: "Journal"   },
   ]
 
   return (

@@ -1,10 +1,19 @@
+export type WorkoutType = "both" | "muscle" | "cardio"
+
+export const WORKOUT_TYPE_LABELS: Record<WorkoutType, string> = {
+  both:    "Muscle + Cardio",
+  muscle:  "Muscle only",
+  cardio:  "Cardio only",
+}
+
 export interface DayEntry {
-  day: number
+  day:         number
   workoutDone: boolean
-  calories: number | null
-  protein: number | null
-  weight: number | null
-  completed: boolean
+  workoutType: WorkoutType | null
+  calories:    number | null
+  protein:     number | null
+  weight:      number | null
+  completed:   boolean
 }
 
 export type DayStatus = "completed" | "missed" | "future" | "today"

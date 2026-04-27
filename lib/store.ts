@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { useShallow } from "zustand/shallow"
-import type { DayEntry } from "./types"
+import type { DayEntry, WorkoutType } from "./types"
 import type { WorkoutSession, ExerciseLog } from "./training"
 import { getStoredProfileId } from "./auth"
 import {
@@ -70,7 +70,7 @@ interface TransformationStore {
   createProfile: (params: CreateProfileParams) => Promise<void>
 
   // Day actions
-  logWorkout:         (day: number) => void
+  logWorkout:         (day: number, type: WorkoutType) => void
   setStagingCalories: (val: string) => void
   setStagingProtein:  (val: string) => void
   setStagingWeight:   (val: string) => void
@@ -198,10 +198,10 @@ export const useStore = create<TransformationStore>()(
 
       // ── Mutations ─────────────────────────────────────────────────────
 
-      logWorkout: (day) => {
+      logWorkout: (day, type) => {
         set((state) => {
           const prev    = state.entries[day] ?? emptyEntry(day)
-          const updated = { ...prev, workoutDone: true }
+          const updated = { ...prev, workoutDone: true, workoutType: type }
           syncEntry(state, updated)
           return { entries: { ...state.entries, [day]: updated } }
         })
@@ -310,7 +310,7 @@ export const useStore = create<TransformationStore>()(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function emptyEntry(day: number): DayEntry {
-  return { day, workoutDone: false, calories: null, protein: null, weight: null, completed: false }
+  return { day, workoutDone: false, workoutType: null, calories: null, protein: null, weight: null, completed: false }
 }
 
 function syncEntry(
