@@ -68,6 +68,8 @@ interface TransformationStore {
   // Lifecycle actions
   initialize:    () => Promise<void>
   createProfile: (params: CreateProfileParams) => Promise<void>
+  /** Re-derive currentDay from startDate + today's date. No network call. */
+  refreshDay:    () => void
 
   // Day actions
   logWorkout:         (day: number, type: WorkoutType) => void
@@ -194,6 +196,17 @@ export const useStore = create<TransformationStore>()(
           proteinTarget,
           entries:       {},
         })
+      },
+
+      // ── refreshDay (midnight auto-update) ────────────────────────────
+
+      refreshDay: () => {
+        const { startDate, currentDay } = get()
+        if (!startDate) return
+        const newDay = calcCurrentDay(startDate)
+        if (newDay !== currentDay) {
+          set({ currentDay: newDay })
+        }
       },
 
       // ── Mutations ─────────────────────────────────────────────────────
