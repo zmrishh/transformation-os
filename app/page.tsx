@@ -1,19 +1,75 @@
-import { Button } from "@/components/ui/button"
+import { Nav } from "@/components/nav"
+import { DashboardHero } from "@/components/dashboard/hero"
+import { CompleteButton } from "@/components/dashboard/complete-button"
+import { StreakTimeline } from "@/components/dashboard/streak-timeline"
+import { TodayStatus } from "@/components/dashboard/today-status"
+import { BodyMetrics } from "@/components/dashboard/body-metrics"
+import { QuickInput } from "@/components/dashboard/quick-input"
+import { SystemInsight } from "@/components/dashboard/system-insight"
+import { Separator } from "@/components/ui/separator"
 
-export default function Page() {
+// Each section has a reveal delay so they cascade in on first load
+const DELAYS = [0, 80, 160, 240, 320, 400, 480, 560]
+
+function Section({
+  children,
+  delayIndex = 0,
+}: {
+  children: React.ReactNode
+  delayIndex?: number
+}) {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+    <div
+      className="section-reveal"
+      style={{ animationDelay: `${DELAYS[delayIndex] ?? 0}ms` }}
+    >
+      {children}
+    </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Nav />
+
+      <main className="mx-auto max-w-lg px-6 pt-24 pb-20 flex flex-col gap-14">
+
+        <Section delayIndex={0}>
+          <DashboardHero />
+        </Section>
+
+        <Section delayIndex={1}>
+          <CompleteButton />
+        </Section>
+
+        <Section delayIndex={2}>
+          <StreakTimeline />
+        </Section>
+
+        <Section delayIndex={3}>
+          <SystemInsight />
+        </Section>
+
+        <Separator className="opacity-30" />
+
+        <Section delayIndex={4}>
+          <TodayStatus />
+        </Section>
+
+        <Separator className="opacity-30" />
+
+        <Section delayIndex={5}>
+          <QuickInput />
+        </Section>
+
+        <Separator className="opacity-30" />
+
+        <Section delayIndex={6}>
+          <BodyMetrics />
+        </Section>
+
+      </main>
     </div>
   )
 }

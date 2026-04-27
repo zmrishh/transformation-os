@@ -1,15 +1,19 @@
 import { Geist, Geist_Mono } from "next/font/google"
+import type { Metadata } from "next"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { AppInit } from "@/components/app-init"
+import { cn } from "@/lib/utils"
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'})
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
+
+export const metadata: Metadata = {
+  title: "Transformation OS",
+  description: "Your 90-day personal transformation dashboard",
+}
 
 export default function RootLayout({
   children,
@@ -19,11 +23,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      className={cn("dark antialiased", geist.variable, geistMono.variable)}
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          forcedTheme="dark"
+          disableTransitionOnChange
+        >
+          <AppInit>{children}</AppInit>
+        </ThemeProvider>
       </body>
     </html>
   )
