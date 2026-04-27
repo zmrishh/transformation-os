@@ -105,10 +105,12 @@ export async function deleteMedia(entry: MediaRow): Promise<{ error: UploadError
     return { error: { code: "STORAGE_ERROR", message: storageError.message } }
   }
 
+  const userId = getStoredProfileId()
   const { error: dbError } = await supabase
     .from("media_entries")
     .delete()
     .eq("id", entry.id)
+    .eq("user_id", userId ?? "")
 
   if (dbError) {
     return { error: { code: "DB_ERROR", message: dbError.message } }
@@ -123,9 +125,13 @@ export async function deleteMedia(entry: MediaRow): Promise<{ error: UploadError
  * Returns entries sorted newest day first.
  */
 export async function fetchMedia(): Promise<{ data: MediaRow[]; error: string | null }> {
+  const userId = getStoredProfileId()
+  if (!userId) return { data: [], error: null }
+
   const { data, error } = await supabase
     .from("media_entries")
     .select("*")
+    .eq("user_id", userId)
     .order("day", { ascending: false })
     .order("created_at", { ascending: false }) as {
       data: MediaRow[] | null
