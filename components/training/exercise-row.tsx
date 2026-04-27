@@ -40,7 +40,7 @@ export function ExerciseRow({ exercise, log, day }: ExerciseRowProps) {
     <div className="border-b border-border last:border-0">
       {/* ── Main row ──────────────────────────────────────────────────── */}
       <div
-        className="flex items-center justify-between py-3.5 cursor-pointer select-none group"
+        className="flex items-center justify-between py-4 cursor-pointer select-none group min-h-[52px]"
         onClick={toggle}
       >
         <div className="flex items-center gap-3.5">

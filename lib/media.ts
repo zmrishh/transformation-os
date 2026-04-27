@@ -1,4 +1,5 @@
-import { supabase, ensureAuth, VAULT_BUCKET, type MediaRow, type MediaInsert } from "./supabase"
+import { supabase, VAULT_BUCKET, type MediaRow, type MediaInsert } from "./supabase"
+import { getStoredProfileId } from "./auth"
 
 const MAX_SIZE_BYTES = 50 * 1024 * 1024 // 50 MB
 const ACCEPTED_MIME = new Set([
@@ -41,7 +42,8 @@ export async function uploadMedia(
   const validationError = validateFile(file)
   if (validationError) return { data: null, error: validationError }
 
-  const userId    = await ensureAuth()
+  const userId = getStoredProfileId()
+  if (!userId) return { data: null, error: { code: "STORAGE_ERROR" as const, message: "Not authenticated" } }
   const safeName  = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
   // User-scoped path so storage RLS (foldername = userId) works
   const storagePath = `${userId}/${day}/${Date.now()}-${safeName}`

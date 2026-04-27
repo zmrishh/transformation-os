@@ -32,8 +32,8 @@ export function CardioSection({ day, selectedCardio, cardioDone }: CardioSection
         )}
       </div>
 
-      {/* Option pills */}
-      <div className="flex flex-wrap gap-2">
+      {/* Option pills — wrap on mobile */}
+      <div className="flex flex-wrap gap-2 sm:flex-row">
         {CARDIO_OPTIONS.map((opt) => {
           const isSelected = selectedCardio === opt.id
           return (

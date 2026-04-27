@@ -43,7 +43,7 @@ export function TrainingClient() {
     <div className="min-h-screen bg-background">
       <Nav />
 
-      <main className="mx-auto max-w-lg px-6 pt-24 pb-24 flex flex-col gap-10">
+      <main className="mx-auto max-w-lg px-4 sm:px-6 pt-20 sm:pt-24 pb-24 flex flex-col gap-10">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
         <div className="section-reveal" style={{ animationDelay: "0ms" }}>

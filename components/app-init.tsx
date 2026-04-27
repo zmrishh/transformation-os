@@ -2,32 +2,40 @@
 
 import { useEffect } from "react"
 import { useStore } from "@/lib/store"
+import { PasscodeScreen } from "@/components/auth/passcode-screen"
 import { OnboardingModal } from "@/components/onboarding/onboarding-modal"
 
 /**
- * Mounts once in layout.tsx. Handles:
- *  1. Calling initialize() on first client render
- *  2. Showing a minimal loading gate until state is ready
- *  3. Rendering OnboardingModal for first-time users
+ * Mounted once in layout.tsx. Handles the full init lifecycle:
+ *
+ *  isLoading              → spinner
+ *  !isAuthenticated       → PasscodeScreen
+ *  needsOnboarding        → OnboardingModal (covers page)
+ *  isInitialized          → render children
  */
 export function AppInit({ children }: { children: React.ReactNode }) {
-  const initialize     = useStore((s) => s.initialize)
-  const isInitialized  = useStore((s) => s.isInitialized)
+  const initialize      = useStore((s) => s.initialize)
+  const isLoading       = useStore((s) => s.isLoading)
+  const isAuthenticated = useStore((s) => s.isAuthenticated)
+  const isInitialized   = useStore((s) => s.isInitialized)
   const needsOnboarding = useStore((s) => s.needsOnboarding)
 
   useEffect(() => {
     initialize()
-  // initialize is a stable reference (defined in zustand set, not re-created)
+  // initialize is a stable store reference — safe to omit from deps
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Show minimal spinner until Supabase responds
-  if (!isInitialized && !needsOnboarding) {
+  // ── Loading ─────────────────────────────────────────────────────────
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div
-          className="size-5 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: "var(--muted-foreground)", borderTopColor: "transparent" }}
+          className="size-5 rounded-full border-2 animate-spin"
+          style={{
+            borderColor: "var(--muted-foreground)",
+            borderTopColor: "transparent",
+          }}
           role="status"
           aria-label="Loading"
         />
@@ -35,15 +43,23 @@ export function AppInit({ children }: { children: React.ReactNode }) {
     )
   }
 
+  // ── Not authenticated ─────────────────────────────────────────────
+  if (!isAuthenticated) {
+    return <PasscodeScreen />
+  }
+
+  // ── Authenticated: onboarding or app ─────────────────────────────
   return (
     <>
-      {/* Onboarding covers the whole screen until setup is complete */}
+      {/* OnboardingModal covers the screen until user_progress is created */}
       {needsOnboarding && <OnboardingModal />}
 
-      {/* Render page content in background so it's ready when onboarding closes */}
-      <div style={{ visibility: needsOnboarding ? "hidden" : "visible" }}>
-        {children}
-      </div>
+      {/* Page content rendered in background (hidden during onboarding) */}
+      {(isInitialized || needsOnboarding) && (
+        <div style={{ visibility: needsOnboarding ? "hidden" : "visible" }}>
+          {children}
+        </div>
+      )}
     </>
   )
 }

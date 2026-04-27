@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { PlayIcon } from "lucide-react"
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { MediaRow } from "@/lib/supabase"
 import type { UploadError } from "@/lib/media"
@@ -31,7 +30,8 @@ function Thumbnail({ entry, onClick }: ThumbnailProps) {
     <button
       onClick={onClick}
       className={cn(
-        "relative flex-shrink-0 size-28 rounded-xl overflow-hidden group",
+        "snap-item relative flex-shrink-0 rounded-xl overflow-hidden group",
+        "size-28 sm:size-32",
         "ring-1 ring-border hover:ring-foreground/30",
         "transition-all duration-200 hover:scale-[1.03] active:scale-[0.97]",
       )}
@@ -90,8 +90,9 @@ export function PhotoStrip({ items, loading, fetchError, fetchErrorKind, onDelet
 
   return (
     <>
-      <ScrollArea className="w-full">
-        <div className="flex gap-3 pb-3 w-max">
+      {/* Native horizontal scroll with snap — no Radix ScrollArea needed */}
+      <div className="snap-scroll-x -mx-4 sm:-mx-6 px-4 sm:px-6">
+        <div className="flex gap-3 pb-2 w-max">
           {items.map((entry) => (
             <Thumbnail
               key={entry.id}
@@ -99,9 +100,10 @@ export function PhotoStrip({ items, loading, fetchError, fetchErrorKind, onDelet
               onClick={() => setSelectedEntry(entry)}
             />
           ))}
+          {/* Trailing spacer so last item doesn't cut off */}
+          <div className="w-4 sm:w-6 flex-shrink-0" aria-hidden />
         </div>
-        <ScrollBar orientation="horizontal" className="opacity-30 hover:opacity-60 transition-opacity" />
-      </ScrollArea>
+      </div>
 
       <PhotoModal
         entry={selectedEntry}

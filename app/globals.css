@@ -188,3 +188,24 @@
 .number-pop {
   animation: numberPop 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ── Mobile baseline ────────────────────────────────────────────────── */
+html, body {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth momentum scrolling on iOS */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Photo strip: native horizontal scroll with snap on mobile */
+.snap-scroll-x {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.snap-scroll-x::-webkit-scrollbar { display: none; }
+.snap-item { scroll-snap-align: start; }

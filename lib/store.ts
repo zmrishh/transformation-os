@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware"
 import { useShallow } from "zustand/shallow"
 import type { DayEntry } from "./types"
 import type { WorkoutSession, ExerciseLog } from "./training"
-import { ensureAuth } from "./supabase"
+import { getStoredProfileId } from "./auth"
 import {
   calcCurrentDay,
   todayISO,
@@ -19,6 +19,12 @@ import {
   type UserProgressRow,
 } from "./progress"
 
+const TOTAL_DAYS     = 90
+const CAL_TARGET     = 2100
+const PROTEIN_TARGET = 160
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 export interface CreateProfileParams {
   startWeight:   number
   goalWeight:    number
@@ -29,21 +35,16 @@ export interface CreateProfileParams {
   proteinTarget: number
 }
 
-const TOTAL_DAYS     = 90
-const CAL_TARGET     = 2100
-const PROTEIN_TARGET = 160
-
-// ─── Store interface ──────────────────────────────────────────────────────────
-
 interface TransformationStore {
   // Lifecycle
   isLoading:       boolean
   isInitialized:   boolean
+  isAuthenticated: boolean
   needsOnboarding: boolean
 
   // Identity
   userId:    string | null
-  startDate: string | null   // "YYYY-MM-DD"
+  startDate: string | null
 
   // Config
   totalDays:      number
@@ -56,10 +57,10 @@ interface TransformationStore {
   // Per-day data
   entries: Record<number, DayEntry>
 
-  // Training sessions (exercise-level detail — local only, no cross-device sync needed)
+  // Training sessions (local-only, no cross-device sync needed)
   workoutSessions: Record<number, WorkoutSession>
 
-  // Quick-input staging (not persisted — ephemeral between saves)
+  // Quick-input staging
   stagingCalories: string
   stagingProtein:  string
   stagingWeight:   string
@@ -69,12 +70,12 @@ interface TransformationStore {
   createProfile: (params: CreateProfileParams) => Promise<void>
 
   // Day actions
-  logWorkout:          (day: number) => void
-  setStagingCalories:  (val: string) => void
-  setStagingProtein:   (val: string) => void
-  setStagingWeight:    (val: string) => void
-  commitStaging:       (day: number) => void
-  completeDay:         (day: number) => void
+  logWorkout:         (day: number) => void
+  setStagingCalories: (val: string) => void
+  setStagingProtein:  (val: string) => void
+  setStagingWeight:   (val: string) => void
+  commitStaging:      (day: number) => void
+  completeDay:        (day: number) => void
 
   // Training actions
   initWorkoutSession: (day: number, splitIndex: number) => void
@@ -88,16 +89,15 @@ interface TransformationStore {
 export const useStore = create<TransformationStore>()(
   persist(
     (set, get) => ({
-      // ── Lifecycle ─────────────────────────────────────────────────────
-      isLoading:       false,
+      // Starts in loading state so the spinner shows immediately
+      isLoading:       true,
       isInitialized:   false,
+      isAuthenticated: false,
       needsOnboarding: false,
 
-      // ── Identity ──────────────────────────────────────────────────────
       userId:    null,
       startDate: null,
 
-      // ── Config (defaults — overwritten on init) ───────────────────────
       totalDays:     TOTAL_DAYS,
       currentDay:    1,
       startWeight:   90,
@@ -105,13 +105,9 @@ export const useStore = create<TransformationStore>()(
       calorieTarget: CAL_TARGET,
       proteinTarget: PROTEIN_TARGET,
 
-      // ── Per-day data ──────────────────────────────────────────────────
-      entries: {},
-
-      // ── Training ──────────────────────────────────────────────────────
+      entries:         {},
       workoutSessions: {},
 
-      // ── Staging ───────────────────────────────────────────────────────
       stagingCalories: "",
       stagingProtein:  "",
       stagingWeight:   "",
@@ -121,14 +117,22 @@ export const useStore = create<TransformationStore>()(
         set({ isLoading: true })
 
         try {
-          const userId = await ensureAuth()
-          if (!userId) throw new Error("Could not establish user identity")
+          const userId = getStoredProfileId()
+
+          if (!userId) {
+            // No session — show passcode screen
+            set({ isLoading: false, isAuthenticated: false, isInitialized: false })
+            return
+          }
+
+          // Profile ID found — mark authenticated, then fetch data
+          set({ isAuthenticated: true, userId })
 
           const progress = await fetchUserProgress(userId)
 
           if (!progress) {
-            // First visit — show onboarding
-            set({ isLoading: false, needsOnboarding: true, userId })
+            // Profile exists in `profiles` but no user_progress yet — show onboarding
+            set({ isLoading: false, needsOnboarding: true })
             return
           }
 
@@ -140,33 +144,27 @@ export const useStore = create<TransformationStore>()(
             isLoading:       false,
             isInitialized:   true,
             needsOnboarding: false,
-            userId,
-            startDate:     progress.start_date,
+            startDate:       progress.start_date,
             currentDay,
-            startWeight:   progress.start_weight,
-            goalWeight:    progress.goal_weight,
-            calorieTarget: progress.calorie_target,
-            proteinTarget: progress.protein_target,
+            startWeight:     progress.start_weight,
+            goalWeight:      progress.goal_weight,
+            calorieTarget:   progress.calorie_target,
+            proteinTarget:   progress.protein_target,
             entries,
           })
         } catch (err) {
           console.error("[store] initialize failed, using local state:", err)
-          // Graceful degradation — use whatever is in persisted local state
-          set({ isLoading: false, isInitialized: true })
+          set({ isLoading: false, isInitialized: true, isAuthenticated: true })
         }
       },
 
       // ── createProfile (called from onboarding) ────────────────────────
       createProfile: async ({
-        startWeight,
-        goalWeight,
-        heightCm,
-        ageYears,
-        sex,
-        calorieTarget,
-        proteinTarget,
+        startWeight, goalWeight, heightCm, ageYears, sex, calorieTarget, proteinTarget,
       }) => {
-        const userId    = await ensureAuth()
+        const userId = get().userId ?? getStoredProfileId()
+        if (!userId) throw new Error("Not authenticated")
+
         const startDate = todayISO()
 
         const row: UserProgressRow = {
@@ -198,11 +196,11 @@ export const useStore = create<TransformationStore>()(
         })
       },
 
-      // ── Day actions ───────────────────────────────────────────────────
+      // ── Mutations ─────────────────────────────────────────────────────
 
       logWorkout: (day) => {
         set((state) => {
-          const prev = state.entries[day] ?? emptyEntry(day)
+          const prev    = state.entries[day] ?? emptyEntry(day)
           const updated = { ...prev, workoutDone: true }
           syncEntry(state, updated)
           return { entries: { ...state.entries, [day]: updated } }
@@ -216,7 +214,7 @@ export const useStore = create<TransformationStore>()(
       commitStaging: (day) => {
         const { stagingCalories, stagingProtein, stagingWeight } = get()
         set((state) => {
-          const prev = state.entries[day] ?? emptyEntry(day)
+          const prev    = state.entries[day] ?? emptyEntry(day)
           const updated: DayEntry = {
             ...prev,
             calories: stagingCalories !== "" ? Number(stagingCalories) : prev.calories,
@@ -243,7 +241,7 @@ export const useStore = create<TransformationStore>()(
         })
       },
 
-      // ── Training actions ──────────────────────────────────────────────
+      // ── Training ──────────────────────────────────────────────────────
 
       initWorkoutSession: (day, splitIndex) =>
         set((state) => {
@@ -279,10 +277,7 @@ export const useStore = create<TransformationStore>()(
           const session = state.workoutSessions[day]
           if (!session) return state
           return {
-            workoutSessions: {
-              ...state.workoutSessions,
-              [day]: { ...session, selectedCardio: cardioId },
-            },
+            workoutSessions: { ...state.workoutSessions, [day]: { ...session, selectedCardio: cardioId } },
           }
         }),
 
@@ -291,18 +286,13 @@ export const useStore = create<TransformationStore>()(
           const session = state.workoutSessions[day]
           if (!session) return state
           return {
-            workoutSessions: {
-              ...state.workoutSessions,
-              [day]: { ...session, cardioDone: done },
-            },
+            workoutSessions: { ...state.workoutSessions, [day]: { ...session, cardioDone: done } },
           }
         }),
     }),
     {
-      name: "transformation-os-v2",    // v2 so old seed-data cache is abandoned
+      name: "transformation-os-v3",  // v3: passcode auth replaces anon auth
       partialize: (state) => ({
-        // Persisted to localStorage as a fast-load cache
-        // Supabase is always the source of truth on init
         entries:         state.entries,
         workoutSessions: state.workoutSessions,
         currentDay:      state.currentDay,
@@ -317,16 +307,12 @@ export const useStore = create<TransformationStore>()(
   )
 )
 
-// ─── Helpers (module-private) ─────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function emptyEntry(day: number): DayEntry {
   return { day, workoutDone: false, calories: null, protein: null, weight: null, completed: false }
 }
 
-/**
- * Fire-and-forget Supabase sync for a single DayEntry.
- * Runs outside of set() so it doesn't block the synchronous state update.
- */
 function syncEntry(
   state: Pick<TransformationStore, "userId" | "startDate">,
   entry: DayEntry
@@ -335,8 +321,6 @@ function syncEntry(
   upsertDailyLog(entryToLog(state.userId, state.startDate, entry)).catch((err) =>
     console.error("[store] upsertDailyLog failed:", err)
   )
-
-  // Keep goal_weight / start_weight in user_progress in sync
   updateUserProgress(state.userId, {}).catch(() => {/* best-effort */})
 }
 
