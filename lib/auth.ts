@@ -6,8 +6,8 @@ const PROFILE_ID_KEY = "transformation-os-profile-id"
 
 /**
  * Deterministic SHA-256 hash of a passcode using the Web Crypto API.
- * Same passcode on any device → same hex digest → same profile row.
- * The plain passcode is never stored or transmitted.
+ * Same passcode on any device → same 64-char hex digest → same profile row.
+ * The plain passcode is never stored, transmitted, or logged.
  */
 export async function hashPasscode(passcode: string): Promise<string> {
   const data       = new TextEncoder().encode(passcode.trim())
@@ -40,12 +40,14 @@ export function clearProfileId(): void {
 /**
  * Log in with a passcode.
  *
- * Hashes the passcode → looks up `profiles.passcode_hash`.
- * - Found  → stores profile_id in localStorage → returns it
- * - Not found → creates a new profiles row → returns new profile_id
+ * Hashes the passcode client-side → calls the `login_with_passcode` Postgres
+ * function (SECURITY DEFINER) which atomically upserts the profiles row and
+ * returns the UUID.
  *
- * This is the ONLY place a profile row is ever created, so the same
- * passcode always maps to the same data across all devices.
+ * The `profiles` table has NO direct-access RLS policy — the only way to
+ * touch it is through this function, preventing hash enumeration attacks.
+ *
+ * Same passcode on any device → same SHA-256 hash → same profile UUID.
  */
 export async function loginWithPasscode(passcode: string): Promise<string> {
   const trimmed = passcode.trim()
@@ -53,31 +55,13 @@ export async function loginWithPasscode(passcode: string): Promise<string> {
 
   const hash = await hashPasscode(trimmed)
 
-  // Try to find an existing profile
-  const { data: existing, error: lookupError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("passcode_hash", hash)
-    .maybeSingle()
+  // Call the SECURITY DEFINER function — avoids direct table exposure.
+  const { data: profileId, error } = await supabase
+    .rpc("login_with_passcode", { p_hash: hash })
 
-  if (lookupError) throw new Error(lookupError.message)
+  if (error) throw new Error(error.message)
+  if (!profileId) throw new Error("Login failed: no profile ID returned")
 
-  if (existing?.id) {
-    storeProfileId(existing.id)
-    return existing.id
-  }
-
-  // First use of this passcode — create a new profile
-  const { data: created, error: createError } = await supabase
-    .from("profiles")
-    .insert({ passcode_hash: hash })
-    .select("id")
-    .single()
-
-  if (createError || !created) {
-    throw new Error(createError?.message ?? "Failed to create profile")
-  }
-
-  storeProfileId(created.id)
-  return created.id
+  storeProfileId(profileId as string)
+  return profileId as string
 }
