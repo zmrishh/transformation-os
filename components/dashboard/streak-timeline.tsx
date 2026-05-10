@@ -60,7 +60,7 @@ export function StreakTimeline() {
       <div className="flex items-center justify-between px-1">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground tracking-wide uppercase">
-            90-day streak
+          100-day streak
           </span>
           {currentStreak > 0 && (
             <span className="text-[11px]" style={{ color: "var(--success)" }}>

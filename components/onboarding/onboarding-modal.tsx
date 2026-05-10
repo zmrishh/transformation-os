@@ -266,11 +266,11 @@ export function OnboardingModal() {
         {/* Header */}
         <div className="flex flex-col gap-2 text-center">
           <p className="text-xs tracking-widest uppercase text-muted-foreground/60">
-            90 Day Transformation OS
+            100 Day Transformation OS
           </p>
           <h1 className="text-3xl font-bold tracking-tight">Start your journey</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Your 90-day clock starts today.
+            Your 100-day clock starts today.
           </p>
         </div>
 
@@ -280,7 +280,7 @@ export function OnboardingModal() {
             <NumInput value={startWeight} onChange={setStartWeight} placeholder="90.0" autoFocus />
           </FieldRow>
 
-          <FieldRow label="Goal weight" hint="By Day 90" unit="kg">
+          <FieldRow label="Goal weight" hint="By Day 100" unit="kg">
             <NumInput value={goalWeight} onChange={setGoalWeight} placeholder="78.0" />
           </FieldRow>
         </div>

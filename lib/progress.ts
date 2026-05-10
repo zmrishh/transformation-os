@@ -68,7 +68,7 @@ export interface DailyLogRow {
 
 // ─── Day / date helpers ───────────────────────────────────────────────────────
 
-/** Compute 1-indexed current day from start_date. Clamped to [1, 90]. */
+/** Compute 1-indexed current day from start_date. Clamped to [1, 100]. */
 export function calcCurrentDay(startDate: string): number {
   const start = new Date(startDate)
   const today = new Date()
@@ -76,7 +76,7 @@ export function calcCurrentDay(startDate: string): number {
   start.setHours(0, 0, 0, 0)
   today.setHours(0, 0, 0, 0)
   const diff = Math.floor((today.getTime() - start.getTime()) / 86_400_000)
-  return Math.min(Math.max(diff + 1, 1), 90)
+  return Math.min(Math.max(diff + 1, 1), 100)
 }
 
 /** Convert 1-indexed day number back to a calendar date. */

@@ -6,10 +6,11 @@ import { TodayStatus } from "@/components/dashboard/today-status"
 import { BodyMetrics } from "@/components/dashboard/body-metrics"
 import { QuickInput } from "@/components/dashboard/quick-input"
 import { SystemInsight } from "@/components/dashboard/system-insight"
+import { InsulinTips } from "@/components/dashboard/insulin-tips"
 import { Separator } from "@/components/ui/separator"
 
 // Each section has a reveal delay so they cascade in on first load
-const DELAYS = [0, 80, 160, 240, 320, 400, 480, 560]
+const DELAYS = [0, 80, 160, 240, 320, 400, 480, 560, 640]
 
 function Section({
   children,
@@ -67,6 +68,12 @@ export default function DashboardPage() {
 
         <Section delayIndex={6}>
           <BodyMetrics />
+        </Section>
+
+        <Separator className="opacity-30" />
+
+        <Section delayIndex={7}>
+          <InsulinTips />
         </Section>
 
       </main>

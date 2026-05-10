@@ -19,7 +19,7 @@ import {
   type UserProgressRow,
 } from "./progress"
 
-const TOTAL_DAYS     = 90
+const TOTAL_DAYS     = 100
 const CAL_TARGET     = 2100
 const PROTEIN_TARGET = 160
 

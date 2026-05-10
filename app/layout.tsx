@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   title: "Transformation OS",
-  description: "Your 90-day personal transformation dashboard",
+  description: "Your 100-day personal transformation dashboard",
 }
 
 export default function RootLayout({
